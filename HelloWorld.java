@@ -6,36 +6,48 @@ public class Main {
      public static void main(String[] args){
         
         Scanner scan = new Scanner(System.in);
-        HashMap<String, String> map = new HashMap<>();
-        map.put("ClassCastException", "excpt@classCastFailed"); // excpt@invalidCmp
-        map.put("NullPointerException", "excpt@accessViolation");
-        map.put("OutOfMemoryError", "excpt@noMemory");
-        map.put("ArrayIndexOutOfBoundsException", "excpt@dbgArrayIdxOutOfRange");
-        map.put("StackOverflowError", "excpt@stackOverflow");
-        map.put("AssertionError", "excpt@dbgAssertFailed");
+        HashMap<String, String> throwableMap = new HashMap<>();
+        throwableMap.put("ClassCastException", "excpt@classCastFailed"); // excpt@invalidCmp?
+        throwableMap.put("NullPointerException", "excpt@accessViolation");
+        throwableMap.put("OutOfMemoryError", "excpt@noMemory");
+        throwableMap.put("ArrayIndexOutOfBoundsException", "excpt@dbgArrayIdxOutOfRange");
+        throwableMap.put("StackOverflowError", "excpt@stackOverflow");
+        throwableMap.put("AssertionError", "excpt@dbgAssertFailed");
         
-        String throwableCheck = "(?:java\\.lang\\.)?([A-Z][A-Za-z]+(Error|Exception))";
+        String className = "[A-Z][A-Za-z\\d_]*";
+        String throwableCheck = "(?:java\\.lang\\.)?(" + className + "(Error|Exception))";
+        String multipileLineCommentCheck = "(?m)(?:/\\*\\*?)(.*)(?:\\*/)";
+        String intCheck = "\\d+";
+        String doubleValueCheck = intCheck + "\\." + intCheck;
         while (scan.hasNext()) {
             String line = scan.nextLine().trim();
-            Pattern p = Pattern.compile(".*?" + throwableCheck + ".*");
+            Pattern p = Pattern.compile(throwableCheck);
             Matcher m = p.matcher(line);
             boolean b = m.matches();
             if (b) {
                 String matched = m.group(1);
                 // System.out.println("matched: " + matched);
-                line = line.replaceAll("throw new " + throwableCheck + "\\(.*\\)?" ,"throw " + map.get(matched));
+                line = line.replaceAll("throw new " + throwableCheck + "\\(.*\\)?" ,"throw " + throwableMap.get(matched));
             }
-            
+            // TODO java.util, java.langの書き換えを関数化する
+            line = line.replaceAll(multipileLineCommentCheck, "{$1}");
+            line = line.replaceAll("Math\\.PI", "lib@pi");
+            line = line.replaceAll("Math\\.E", "lib@e");
+            line = line.replaceAll("Math\\.sqrt\\(" + doubleValueCheck +"\\)", "lib@sqrt($1)");
+            line = line.replaceAll("Integer\\.MAX_VALUE", "lib@intMax");
+            line = line.replaceAll("Integer\\.MIN_VALUE", "lib@intMin");
+            line = line.replaceAll("(?:java\\.util\\.)?UUID.randomUUID\\(\\).toString\\(\\)","lib@rndUuid");
+            line = line.replaceAll("(?:java\\.lang\\.)?System\\.exit\\((" + intCheck + ")\\)", "lib@exitCode($1)");
             // java.lang.String => kuin.array<kuin.array<char>>
-            //line = line.replaceAll()
+            // line = line.replaceAll()
             
             // java.util.List => kuin.list
             // java.util.List#size => kuin.list#^
             
-            // java.native.byte => kuin.b8
-            // java.native.short => kuin.b16
-            // java.native.int => kuin.b32
-            // java.native.long => kuin.b64
+            // java.native.byte => kuin.bit8
+            // java.native.short => kuin.bit16
+            // java.native.int => kuin.bit32
+            // java.native.long => kuin.bit64
             
             // java.native.array#<init> => kuin.array#<init>
             // java.native.array#<init>(int) => kuin.array#<init>(int)
