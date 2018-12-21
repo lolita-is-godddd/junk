@@ -2,6 +2,7 @@ import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.*;
+import java.util.List;
 public class Main {
      public static void main(String[] args){
         
@@ -14,12 +15,37 @@ public class Main {
         throwableMap.put("StackOverflowError", "excpt@stackOverflow");
         throwableMap.put("AssertionError", "excpt@dbgAssertFailed");
         
-        String className = "[A-Z][A-Za-z\\d_]*";
+        String className = "[A-Z][$A-Za-z\\d_]*";
+        String varCheck = "[A-Z][$A-Za-z\\d_]";
         String throwableCheck = "(?:java\\.lang\\.)?(" + className + "(Error|Exception))";
         String multipileLineCommentCheck = "(?m)(?:/\\*\\*?)(.*)(?:\\*/)";
+        String singleLineCommentCheck = "(?:\\/\\/)(.*)^";
         String intCheck = "\\d+";
+        int cnt = 0;
         String doubleValueCheck = intCheck + "\\." + intCheck;
+        List<String> out = new ArrayList<>();
+        List<String> in = new ArrayList<>();
         while (scan.hasNext()) {
+            in.add(scan.nextLine().trim());
+        }
+        
+        modifySingleLineComment();
+        modifyMultipileLineComment();
+        replacePremitive();
+        replaceStringArrayToArrayArrayChar();
+        replaceStringToArrayChar();
+        replaceMathMethods();
+        replaceMathFields();
+        replaceListIntoKuinStyle();
+        replaceMapIntoKuinStyle();
+        replaceStackIntoKuinStyle();
+        replaceIntStreamRangeToLibCountup();
+        // replaceIntStreamRangeClosedToLibCountup();
+        replacePrintToCuiPrint();
+        replaceScannerToCuiInput();
+        
+        {
+            p("" + cnt++);
             String line = scan.nextLine().trim();
             Pattern p = Pattern.compile(throwableCheck);
             Matcher m = p.matcher(line);
@@ -31,13 +57,16 @@ public class Main {
             }
             // TODO java.util, java.langの書き換えを関数化する
             line = line.replaceAll(multipileLineCommentCheck, "{$1}");
-            line = line.replaceAll("Math\\.PI", "lib@pi");
-            line = line.replaceAll("Math\\.E", "lib@e");
-            line = line.replaceAll("Math\\.sqrt\\(" + doubleValueCheck +"\\)", "lib@sqrt($1)");
-            line = line.replaceAll("Integer\\.MAX_VALUE", "lib@intMax");
-            line = line.replaceAll("Integer\\.MIN_VALUE", "lib@intMin");
-            line = line.replaceAll("(?:java\\.util\\.)?UUID.randomUUID\\(\\).toString\\(\\)","lib@rndUuid");
-            line = line.replaceAll("(?:java\\.lang\\.)?System\\.exit\\((" + intCheck + ")\\)", "lib@exitCode($1)");
+            line = line.replaceAll(singleLineCommentCheck, "{$1}");
+            line = javaLangReplace(line, "Math\\.PI", "lib@pi");
+            line = javaLangReplace(line, "Math\\.E", "lib@e");
+            //line = line.replaceAll("Math\\.sqrt\\(" + doubleValueCheck +"\\)", "lib@sqrt($1)");
+            line = javaLangReplace(line, "Integer\\.MAX_VALUE", "lib@intMax");
+            line = javaLangReplace(line, "Integer\\.MIN_VALUE", "lib@intMin");
+            //line = line.replaceAll("(?:public +static|static +public) +void +main\\(String\\[\\] +(" + varCheck + ")\\) +\\{", "func main()\nvar $1: [][]char :: lib@cmdLine");
+            //line = line.replaceAll("(?:java\\.util\\.)?UUID.randomUUID\\(\\).toString\\(\\)","lib@rndUuid");
+            //line = line.replaceAll("(?:java\\.lang\\.)?System\\.exit\\((" + intCheck + ")\\)", "lib@exitCode($1)");
+            //line = line.replaceAll("(?:$int|\\( *int)" + groupMatch(varCheck) + " *\\= *" + groupMatch(intCheck), "var $1: bit32 :: $2");
             // java.lang.String => kuin.array<kuin.array<char>>
             // line = line.replaceAll()
             
@@ -75,7 +104,21 @@ public class Main {
             // java.lang.String#toUpperCase() => kuin.array<kuin.array<char>>#upper()
             // java.lang.String#toLowerCase() => kuin.array<kuin.array<char>>#lower()
             // java.lang.String#trim() => kuin.array<kuin.array<char>>#trim()
-            System.out.println(line);
+            p(line);
         }
-     }
+    }
+    
+    public static String groupMatch(String regex) {
+        if (!regex.startsWith("(")) regex = "(" + regex;
+        if (!regex.startsWith(")")) regex += ")";
+        return regex;
+    }
+    
+    public static void p(String message) {
+        System.out.println(message);
+    }
+    
+    public static String javaLangReplace(String replace, String of, String replacement) {
+        return replace.replaceAll("(?:java\\.lang\\.)?" + of, replacement);
+    }
 }
